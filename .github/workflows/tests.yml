@@ -229,3 +229,58 @@ jobs:
         run: vendor/bin/pest -vvv
         env:
           DB_CONNECTION: sqlite
+
+  sqlsrv:
+    runs-on: ubuntu-22.04
+
+    services:
+      sqlsrv:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'sTr0ngP@ssw0rd!'
+        ports:
+          - 1433:1433
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.3]
+        laravel: [11]
+        stability: [prefer-stable]
+
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - Stability ${{ matrix.stability }} - SQL Server 2022
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, redis, pcntl, zip, relay, sqlsrv, pdo_sqlsrv, odbc, pdo_odbc,
+          ini-values: error_reporting=E_ALL
+          tools: composer:v2
+          coverage: none
+
+      - name: Install redis-cli
+        run: sudo apt-get install -qq redis-tools
+
+      - name: Install dependencies
+        run: |
+          composer require cachewerk/relay --no-interaction --no-update
+          composer update --prefer-dist --no-interaction --no-progress --${{ matrix.stability }}
+
+      - name: Execute tests
+        run: vendor/bin/pest -vvv
+        env:
+          DB_CONNECTION: sqlsrv
+          DB_DATABASE: master
+          DB_USERNAME: sa
+          DB_PASSWORD: 'sTr0ngP@ssw0rd!'

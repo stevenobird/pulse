@@ -182,6 +182,9 @@ class DatabaseStorage implements Storage
                     'pgsql', 'sqlite' => new Expression(<<<SQL
                         {$this->wrap('pulse_aggregates.value')} + "excluded"."value"
                         SQL),
+                    'sqlsrv' => new Expression(<<<SQL
+                        {$this->wrap('pulse_aggregates.value')} + [laravel_source].[value]
+                        SQL),
                     default => throw new RuntimeException("Unsupported database driver [{$driver}]"),
                 },
             ]
@@ -206,6 +209,9 @@ class DatabaseStorage implements Storage
                         SQL),
                     'sqlite' => new Expression(<<<SQL
                         min({$this->wrap('pulse_aggregates.value')}, "excluded"."value")
+                        SQL),
+                    'sqlsrv' => new Expression(<<<SQL
+                        least({$this->wrap('pulse_aggregates.value')}, + [laravel_source].[value])
                         SQL),
                     default => throw new RuntimeException("Unsupported database driver [{$driver}]"),
                 },
@@ -232,6 +238,9 @@ class DatabaseStorage implements Storage
                     'sqlite' => new Expression(<<<SQL
                         max({$this->wrap('pulse_aggregates.value')}, "excluded"."value")
                         SQL),
+                    'sqlsrv' => new Expression(<<<SQL
+                        greatest({$this->wrap('pulse_aggregates.value')}, + [laravel_source].[value])
+                        SQL),
                     default => throw new RuntimeException("Unsupported database driver [{$driver}]"),
                 },
             ]
@@ -253,6 +262,9 @@ class DatabaseStorage implements Storage
                     'mariadb', 'mysql' => new Expression('`value` + values(`value`)'),
                     'pgsql', 'sqlite' => new Expression(<<<SQL
                         {$this->wrap('pulse_aggregates.value')} + "excluded"."value"
+                        SQL),
+                    'sqlsrv' => new Expression(<<<SQL
+                        {$this->wrap('pulse_aggregates.value')} + [laravel_source].[value]
                         SQL),
                     default => throw new RuntimeException("Unsupported database driver [{$driver}]"),
                 },
@@ -281,6 +293,14 @@ class DatabaseStorage implements Storage
                         SQL),
                     'count' => new Expression(<<<SQL
                         {$this->wrap('pulse_aggregates.count')} + "excluded"."count"
+                        SQL),
+                ],
+                'sqlsrv' => [
+                    'value' => new Expression(<<<SQL
+                        ({$this->wrap('pulse_aggregates.value')} * {$this->wrap('pulse_aggregates.count')} + ([laravel_source].[value] * [laravel_source].[count])) / ({$this->wrap('pulse_aggregates.count')} + [laravel_source].[count])
+                        SQL),
+                    'count' => new Expression(<<<SQL
+                        {$this->wrap('pulse_aggregates.count')} + [laravel_source].[count]
                         SQL),
                 ],
                 default => throw new RuntimeException("Unsupported database driver [{$driver}]"),
@@ -672,7 +692,7 @@ class DatabaseStorage implements Storage
 
                     foreach ($types as $type) {
                         $query->selectRaw(match ($aggregate) {
-                            'count' => "count(case when ({$this->wrap('type')} = ?) then true else null end)",
+                            'count' => "count(case when ({$this->wrap('type')} = ?) then 1 else null end)",
                             'min' => "min(case when ({$this->wrap('type')} = ?) then {$this->wrap('value')} else null end)",
                             'max' => "max(case when ({$this->wrap('type')} = ?) then {$this->wrap('value')} else null end)",
                             'sum' => "sum(case when ({$this->wrap('type')} = ?) then {$this->wrap('value')} else null end)",
@@ -820,6 +840,6 @@ class DatabaseStorage implements Storage
      */
     protected function requiresManualKeyHash(): bool
     {
-        return $this->connection()->getDriverName() === 'sqlite';
+        return in_array($this->connection()->getDriverName(), ['sqlite', 'sqlsrv']);
     }
 }

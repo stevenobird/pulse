@@ -105,7 +105,7 @@ function keyHash(string $string): string
     return match (DB::connection()->getDriverName()) {
         'mariadb', 'mysql' => hex2bin(md5($string)),
         'pgsql' => Uuid::fromString(md5($string)),
-        'sqlite' => md5($string),
+        'sqlite', 'sqlsrv' => md5($string),
     };
 }
 
