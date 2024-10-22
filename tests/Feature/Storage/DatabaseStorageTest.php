@@ -480,7 +480,7 @@ test('total aggregate for multiple types', function () {
 it('collapses values with the same key into a single upsert', function () {
     $bindings = [];
     DB::listen(function (QueryExecuted $event) use (&$bindings) {
-        if (str_starts_with($event->sql, 'insert')  || str_starts_with($event->sql, 'merge')) {
+        if (str_starts_with($event->sql, 'insert') || str_starts_with($event->sql, 'merge')) {
             $bindings = $event->bindings;
         }
     });
