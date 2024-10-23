@@ -30,7 +30,7 @@ it('captures requests over the threshold', function () {
     expect($entries[0]->type)->toBe('slow_request');
     expect($entries[0]->key)->toBe(json_encode(['GET', '/test-route', 'Closure']));
     expect($entries[0]->key_hash)->toBe(keyHash(json_encode(['GET', '/test-route', 'Closure'])));
-    expect($entries[0]->value)->toBe(4000);
+    expect($entries[0]->value)->toEqual(4000);
 
     $aggregates = Pulse::ignore(fn () => DB::table('pulse_aggregates')->orderBy('type')->orderBy('period')->orderBy('aggregate')->get());
     expect($aggregates)->toHaveCount(8);
@@ -126,7 +126,7 @@ it('can configure threshold per route', function () {
     expect($entries[0]->type)->toBe('slow_request');
     expect($entries[0]->key)->toBe(json_encode(['GET', '/one-second-threshold', 'Closure']));
     expect($entries[0]->key_hash)->toBe(keyHash(json_encode(['GET', '/one-second-threshold', 'Closure'])));
-    expect($entries[0]->value)->toBe(1000);
+    expect($entries[0]->value)->toEqual(1000);
 
     DB::table('pulse_entries')->delete();
 
@@ -140,11 +140,11 @@ it('can configure threshold per route', function () {
     expect($entries[0]->type)->toBe('slow_request');
     expect($entries[0]->key)->toBe(json_encode(['GET', '/one-second-threshold', 'Closure']));
     expect($entries[0]->key_hash)->toBe(keyHash(json_encode(['GET', '/one-second-threshold', 'Closure'])));
-    expect($entries[0]->value)->toBe(2000);
+    expect($entries[0]->value)->toEqual(2000);
     expect($entries[1]->type)->toBe('slow_request');
     expect($entries[1]->key)->toBe(json_encode(['GET', '/two-second-threshold', 'Closure']));
     expect($entries[1]->key_hash)->toBe(keyHash(json_encode(['GET', '/two-second-threshold', 'Closure'])));
-    expect($entries[1]->value)->toBe(2000);
+    expect($entries[1]->value)->toEqual(2000);
 });
 
 it('captures slow requests per user', function () {
@@ -317,7 +317,7 @@ it('captures the requests "via" route when using livewire', function () {
     expect($entries[0]->type)->toBe('slow_request');
     expect($entries[0]->key)->toBe(json_encode(['POST', '/test-route', 'via /livewire/update']));
     expect($entries[0]->key_hash)->toBe(keyHash(json_encode(['POST', '/test-route', 'via /livewire/update'])));
-    expect($entries[0]->value)->toBe(4000);
+    expect($entries[0]->value)->toEqual(4000);
 
     $aggregates = Pulse::ignore(fn () => DB::table('pulse_aggregates')->orderBy('type')->orderBy('period')->orderBy('aggregate')->get());
     expect($aggregates)->toHaveCount(8);
